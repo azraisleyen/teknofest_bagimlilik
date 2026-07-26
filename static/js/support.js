@@ -1,0 +1,3 @@
+const token=location.pathname.startsWith('/q/')?location.pathname.slice(3):'';
+document.querySelectorAll('[data-interaction]').forEach(a=>a.addEventListener('click',()=>{fetch('/api/v1/public/interactions',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':document.cookie.match(/csrftoken=([^;]+)/)?.[1]||''},body:JSON.stringify({token,interaction_type:a.dataset.interaction}),keepalive:true}).catch(()=>{});}));
+document.querySelector('#copy-address')?.addEventListener('click',async()=>{await navigator.clipboard.writeText(document.querySelector('#address').textContent);document.querySelector('#status').textContent='Adres kopyalandı';});

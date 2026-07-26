@@ -1,0 +1,4 @@
+# Event contract v1
+Machine-readable schemas in `contracts/v1/` are authoritative. Only `CONTENT_STARTED` and `CONTENT_ENDED`, schema `1.0`, UTC `Z` timestamps, documented enums, and exact allowlisted fields are accepted. Start requires the same `Idempotency-Key` header/body value; end uses the event ID as its retry key. Start/end share `event_id`; missing start is rejected. Duplicate delivery is stable. A second active device event returns HTTP 409 `ACTIVE_EVENT_CONFLICT`; mismatched end returns `MISMATCHED_END_EVENT`; unsupported/invalid input is rejected without changing general QR.
+
+Forbidden unknown fields include imagery, paths, boxes, tracking/person IDs, exact age/probabilities, gender, coordinates/GPS, phones, tensors, embeddings, and arbitrary data. See schema examples and API OpenAPI output. Errors use `{error:{code,message,correlation_id}}` and never reveal internals.

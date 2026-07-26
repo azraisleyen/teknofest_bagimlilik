@@ -1,0 +1,2 @@
+# Display state machine
+`BOOTING → GENERAL_READY → DYNAMIC_PENDING → DYNAMIC_ACTIVE`; any recoverable failure enters `DEGRADED` while showing general QR, then recovery returns `GENERAL_READY`. Shutdown uses `SHUTTING_DOWN`. Pending always displays general, replacement is atomic, and end only matches the active event. Every start increments a browser-local generation; async completion must match event and generation. Late, ended, or stale completions cannot replace a newer/general QR. Restart begins at boot/general and never restores persisted dynamic visual state.
