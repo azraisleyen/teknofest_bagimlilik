@@ -1,0 +1,18 @@
+name: ci
+on: [push, pull_request]
+jobs:
+ quality:
+  runs-on: ubuntu-latest
+  strategy: {matrix: {python-version: ['3.12']}}
+  steps:
+   - uses: actions/checkout@v4
+   - uses: actions/setup-python@v5
+     with: {python-version: '${{ matrix.python-version }}', cache: pip}
+   - run: pip install -r requirements/development.txt
+   - run: ruff check . && ruff format --check .
+   - run: mypy apps clients/python
+   - run: pytest --cov=apps --cov=clients --cov-report=term-missing
+   - run: python manage.py makemigrations --check --dry-run && python manage.py check
+   - run: python manage.py spectacular --file openapi.yaml --validate
+   - run: bandit -r apps clients -x '*/migrations/*'
+   - run: pip-audit -r requirements/production.txt
