@@ -1,3 +1,4 @@
+from django.utils import timezone
 from drf_spectacular.extensions import OpenApiAuthenticationExtension
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
@@ -32,4 +33,5 @@ class DeviceAuthentication(BaseAuthentication):
             raise AuthenticationFailed(
                 "Invalid device credential", code="INVALID_DEVICE_CREDENTIAL"
             )
+        Device.objects.filter(pk=device.pk).update(last_seen_at=timezone.now())
         return device, None

@@ -24,6 +24,9 @@ class EventService:
             or payload["idempotency_key"] != header_key
         ):
             raise DomainError("IDEMPOTENCY_MISMATCH")
+        if payload["location_id"] != device.location_id:
+            raise DomainError("LOCATION_MISMATCH")
+        EventService.expire_for_device(device)
         existing = (
             QrEventContext.objects.select_for_update().filter(event_id=payload["event_id"]).first()
         )
@@ -103,6 +106,11 @@ class EventService:
         active = QrEventContext.objects.filter(device=device, status="ACTIVE").first()
         if not active or active.event_id != event.event_id:
             raise DomainError("MISMATCHED_END_EVENT", 409)
+        if (
+            timezone.datetime.fromisoformat(payload["occurred_at"].replace("Z", "+00:00"))
+            < event.started_at
+        ):
+            raise DomainError("END_BEFORE_START")
         event.status = "ENDED"
         event.ended_at = payload["occurred_at"]
         event.end_reason = payload["end_reason"]
@@ -116,3 +124,22 @@ class EventService:
             "qr_mode": "GENERAL",
             "general_url": settings.GENERAL_SUPPORT_URL,
         }
+
+    @staticmethod
+    @transaction.atomic
+    def expire_for_device(device=None):
+        cutoff = timezone.now() - timedelta(minutes=settings.QR_EVENT_HARD_TIMEOUT_MINUTES)
+        events = QrEventContext.objects.select_for_update().filter(
+            status="ACTIVE", started_at__lt=cutoff
+        )
+        if device is not None:
+            events = events.filter(device=device)
+        count = 0
+        for event in events:
+            event.status = "EXPIRED"
+            event.ended_at = timezone.now()
+            event.end_reason = "HARD_TIMEOUT"
+            event.save(update_fields=["status", "ended_at", "end_reason", "updated_at"])
+            QrToken.objects.filter(event=event).update(status="REVOKED", revoked_at=timezone.now())
+            count += 1
+        return count

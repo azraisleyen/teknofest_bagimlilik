@@ -1,6 +1,7 @@
 import base64
 import hashlib
 import hmac
+import secrets
 
 from django.conf import settings
 
@@ -17,3 +18,7 @@ class TokenService:
     @staticmethod
     def lookup_hash(token):
         return hashlib.sha256(token.encode()).hexdigest()
+
+    @staticmethod
+    def create_random():
+        return secrets.token_urlsafe(32)

@@ -1,0 +1,3 @@
+# YEDAM doğrulama prosedürü
+
+Merkezler çalışma anında scrape edilmez. Yetkili kişi allowlist'teki resmî kaynaktan tarihli JSON'u `import_yedam_centers --dry-run` ile doğrular, sonra transaction içinde import eder. Kararlı merkez kimliğiyle upsert duplicate üretmez. Eşleme ve merkez `YEDAM_STALE_DAYS` sınırını aşarsa öneri yapılmaz; 115 ve [resmî dizin](https://www.yedam.org.tr/iletisim) kalır. Birincil aktif ve güncelse seçilir; aksi halde güncel aktif yedek seçilir. Telefon GPS'i kullanılmaz. Demo kayıtları yalnızca `seed_demo_referral_data` ile ve **DEMO — NOT PRODUCTION** etiketiyle oluşturulur.

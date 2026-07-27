@@ -9,6 +9,10 @@ if SECRET_KEY.startswith("development-"):
     raise ImproperlyConfigured("DJANGO_SECRET_KEY is required")
 if any("development-token" in value for value in TOKEN_KEYS.values()):
     raise ImproperlyConfigured("production token key required")
+if TOKEN_KEY_VERSION not in TOKEN_KEYS or any(
+    len(value.encode()) < 32 for value in TOKEN_KEYS.values()
+):
+    raise ImproperlyConfigured("All token keys must exist and contain at least 32 bytes")
 SECURE_SSL_REDIRECT = True
 SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True

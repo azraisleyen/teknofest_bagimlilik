@@ -6,9 +6,9 @@ from django.shortcuts import render
 from django.utils import timezone
 
 from apps.interactions.models import QrInteraction
-from apps.qr.models import QrToken
+from apps.qr.models import DeviceSupportToken, QrToken
 from apps.qr.tokens import TokenService
-from apps.yedam.services import center_for_location, safe_map_url
+from apps.yedam.services import build_map_url, center_for_location
 
 from .text import SUPPORT_TEXT
 
@@ -21,10 +21,11 @@ def _session(request):
         return uuid.uuid4()
 
 
-def support_page(request, token=None):
+def support_page(request, token=None, installation_token=None):
     sid = _session(request)
     mapping = None
     dynamic = False
+    device_token = None
     if token:
         record = (
             QrToken.objects.select_related("event")
@@ -45,17 +46,34 @@ def support_page(request, token=None):
             QrInteraction.objects.get_or_create(
                 token=record, anonymous_session_id=sid, interaction_type="LANDING_VIEW"
             )
-    center = center_for_location(mapping.event.location_id) if mapping else None
+    elif installation_token:
+        device_token = (
+            DeviceSupportToken.objects.select_related("device")
+            .filter(token_hash=TokenService.lookup_hash(installation_token), status="ACTIVE")
+            .first()
+        )
+    location_id = (
+        mapping.event.location_id
+        if mapping
+        else (device_token.device.location_id if device_token else None)
+    )
+    center = center_for_location(location_id) if location_id else None
+    map_url = build_map_url(center) if center else ""
+    from apps.surveys.models import SurveyDefinition
+
+    survey_available = SurveyDefinition.objects.filter(active=True, status="PUBLISHED").exists()
     response = render(
         request,
         "support/page.html",
         {
             "text": SUPPORT_TEXT,
             "center": center,
-            "map_available": bool(center and safe_map_url(center.map_url)),
+            "map_available": bool(map_url),
+            "map_url": map_url,
             "directory_url": settings.OFFICIAL_YEDAM_DIRECTORY_URL,
             "dynamic": dynamic,
             "token": token or "",
+            "survey_available": survey_available,
         },
     )
     response.set_cookie(
