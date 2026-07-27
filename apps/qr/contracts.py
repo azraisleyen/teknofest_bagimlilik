@@ -1,8 +1,11 @@
 import json
+from datetime import timedelta
 from datetime import timezone as dt_timezone
 from importlib.resources import files
 
 import jsonschema
+from django.conf import settings
+from django.utils import timezone
 
 
 class ContractError(ValueError):
@@ -23,7 +26,11 @@ def validate_event(payload):
         ),
     )
     try:
-        jsonschema.validate(payload, json.loads(schema.read_text(encoding="utf-8")))
+        jsonschema.validate(
+            payload,
+            json.loads(schema.read_text(encoding="utf-8")),
+            format_checker=jsonschema.FormatChecker(),
+        )
     except jsonschema.ValidationError as exc:
         raise ContractError("INVALID_EVENT") from exc
     from django.utils.dateparse import parse_datetime
@@ -33,4 +40,15 @@ def validate_event(payload):
             value = parse_datetime(payload[field])
             if not value or value.utcoffset() != dt_timezone.utc.utcoffset(value):
                 raise ContractError("TIMESTAMP_MUST_BE_UTC")
+    occurred = parse_datetime(payload.get("occurred_at", ""))
+    if occurred is None:
+        raise ContractError("INVALID_EVENT")
+    now = timezone.now()
+    skew = timedelta(seconds=settings.QR_EVENT_CLOCK_SKEW_SECONDS)
+    if occurred < now - skew or occurred > now + skew:
+        raise ContractError("EVENT_TIME_OUT_OF_RANGE")
+    started = parse_datetime(payload.get("animation_started_at", ""))
+    expected = parse_datetime(payload.get("animation_expected_end_at", ""))
+    if started and expected and expected < started:
+        raise ContractError("EXPECTED_END_BEFORE_START")
     return payload

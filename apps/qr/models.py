@@ -61,3 +61,20 @@ class QrDisplaySession(models.Model):
     fallback_reason = models.CharField(max_length=40, blank=True)
     qr_visual_version = models.CharField(max_length=20, default="v1")
     created_at = models.DateTimeField(auto_now_add=True)
+    idempotency_key = models.CharField(max_length=128, default="")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["device", "idempotency_key"], name="unique_display_idempotency"
+            )
+        ]
+
+
+class DeviceSupportToken(models.Model):
+    token_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    device = models.ForeignKey("devices.Device", models.PROTECT, related_name="support_tokens")
+    token_hash = models.CharField(max_length=64, unique=True)
+    status = models.CharField(max_length=12, default="ACTIVE")
+    created_at = models.DateTimeField(auto_now_add=True)
+    revoked_at = models.DateTimeField(null=True, blank=True)

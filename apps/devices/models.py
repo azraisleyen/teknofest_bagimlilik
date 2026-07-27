@@ -47,3 +47,8 @@ class Device(models.Model):
                 self.credential_hash, hashlib.sha256(secret.encode()).hexdigest()
             )
         )
+
+    @property
+    def is_authenticated(self):
+        """Allow a verified device to act as a DRF principal, never as a Django user."""
+        return self.status == self.Status.ACTIVE and not self.credential_revoked_at
