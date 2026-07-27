@@ -56,3 +56,9 @@ Set production values in `.env`, then run `docker compose build && docker compos
 A phone cannot reach the computer's `localhost`. For physical testing bind to `0.0.0.0`, use a trusted LAN address in `PUBLIC_BASE_URL`, and restrict the firewall. Optional tunnels must be configured manually; no tunnel or credentials are created here.
 
 See `docs/` for architecture, contracts, state machine, privacy, security, deployment, operations, integration, data definitions, and the pending physical QR test plan. Future SmokeVision integration uses only the versioned server-to-server events and framework-independent clients; it must never send camera/person/model data.
+
+## Uçtan uca destek bağlamları
+
+Sistem GPS istemez ve kamera/model verisi işlemez. `/support/` global fallback, `/s/<opak-token>` sabit cihaz kurulumu, `/q/<opak-token>` ise süreli orchestrator olayı bağlamıdır. Cihaz token'ları `manage_device_support_token create|rotate|revoke DEVICE_UUID` ile yönetilir; yalnızca SHA-256 özeti saklanır. Merkez yönlendirmesi doğrulanmış cihaz konum eşlemesinden üretilir ve başlangıç konumu Google Maps URL'sine eklenmez.
+
+Windows geliştirmede Python 3.12 doğrulandıktan sonra `python` komutu kullanılabilir. `.env.example` dosyasını `.env` olarak kopyalayın; gerçek süreç environment değerleri dosyadakilerden önceliklidir. Telefon testi için `PUBLIC_BASE_URL=http://LAN_IP:8000`, `ALLOWED_HOSTS=LAN_IP,localhost`, sınırlı yerel firewall kuralı ve `python manage.py runserver 0.0.0.0:8000` gerekir. Demo sırası: `migrate`, `seed_demo_referral_data`, `seed_demo_data`, `generate_general_qr`, `ENABLE_DEMO_UI=True` ile sunucuyu açma. Demo merkezi üretim verisi değildir.
