@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "event_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "device_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "event_type": {
+      "const": "CONTENT_STARTED"
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "idempotency_key": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128
+    },
+    "location_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "content_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "content_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "content_age_band": {
+      "enum": [
+        "YOUNG_ADULT",
+        "MIDDLE_AGE",
+        "OLDER_ADULT",
+        "GENERAL"
+      ]
+    },
+    "selection_mode": {
+      "enum": [
+        "STABLE_AGE",
+        "LOW_CONFIDENCE_GENERAL",
+        "AGE_BOUNDARY_GENERAL",
+        "MULTIPLE_AGE_GROUPS_GENERAL",
+        "MODEL_UNAVAILABLE_GENERAL",
+        "DEFAULT_GENERAL",
+        "MANUAL_TEST"
+      ]
+    },
+    "audience_mode": {
+      "enum": [
+        "SINGLE",
+        "MULTIPLE_SAME_AGE",
+        "MULTIPLE_DIFFERENT_AGE",
+        "UNKNOWN"
+      ]
+    },
+    "animation_started_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "animation_expected_end_at": {
+      "oneOf": [
+        {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "Z$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "event_id",
+    "idempotency_key",
+    "device_id",
+    "location_id",
+    "event_type",
+    "content_id",
+    "content_version",
+    "content_age_band",
+    "selection_mode",
+    "audience_mode",
+    "animation_started_at",
+    "animation_expected_end_at",
+    "occurred_at"
+  ]
+}

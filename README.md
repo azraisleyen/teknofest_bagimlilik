@@ -56,3 +56,33 @@ Set production values in `.env`, then run `docker compose build && docker compos
 A phone cannot reach the computer's `localhost`. For physical testing bind to `0.0.0.0`, use a trusted LAN address in `PUBLIC_BASE_URL`, and restrict the firewall. Optional tunnels must be configured manually; no tunnel or credentials are created here.
 
 See `docs/` for architecture, contracts, state machine, privacy, security, deployment, operations, integration, data definitions, and the pending physical QR test plan. Future SmokeVision integration uses only the versioned server-to-server events and framework-independent clients; it must never send camera/person/model data.
+
+## Python packaging and CI
+
+`pyproject.toml` is the authoritative application dependency and build metadata source. The
+requirements files select the base editable application install and add only environment-specific
+tooling. Setuptools discovery is deliberately restricted to the Django `apps` and `config`
+packages plus the framework-independent `sentra_qr_client`; repository directories such as
+`contracts`, `docs`, `static`, and `templates` are not accidentally interpreted as Python packages.
+Runtime JSON schemas are copied into `apps.qr.schemas.v1` and included as wheel package data, while
+the root `contracts/v1` copy remains the public integration artifact.
+
+CI performs three independent jobs:
+
+1. **Quality and tests** installs the complete development environment, runs `pip check`, Ruff,
+   mypy, coverage, migration consistency, Django checks, and two OpenAPI validators.
+2. **Package** builds both an isolated sdist and wheel, validates metadata, installs the wheel and its locked dependencies
+   into a fresh virtual environment, imports every public package, and checks
+   that runtime schemas are present.
+3. **Security** runs Bandit, audits the locked production dependency graph, and executes Django's
+   production deployment assessment with non-secret CI-only placeholders.
+
+To reproduce the packaging gate locally:
+
+```bash
+python -m pip install --upgrade pip
+python -m pip install build==1.3.0 twine==6.1.0
+rm -rf build dist *.egg-info
+python -m build
+python -m twine check --strict dist/*
+```
