@@ -1,7 +1,16 @@
+from drf_spectacular.extensions import OpenApiAuthenticationExtension
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 
 from .models import Device
+
+
+class DeviceAuthenticationScheme(OpenApiAuthenticationExtension):
+    target_class = "apps.devices.authentication.DeviceAuthentication"
+    name = "deviceBearerAuth"
+
+    def get_security_definition(self, auto_schema):
+        return {"type": "http", "scheme": "bearer"}
 
 
 class DeviceAuthentication(BaseAuthentication):
