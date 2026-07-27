@@ -1,7 +1,6 @@
 FROM python:3.12-slim AS build
 WORKDIR /app
-COPY pyproject.toml requirements ./
-COPY requirements requirements
+COPY . .
 RUN pip wheel --no-cache-dir --wheel-dir /wheels -r requirements/production.txt
 FROM python:3.12-slim
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 DJANGO_SETTINGS_MODULE=config.settings.production

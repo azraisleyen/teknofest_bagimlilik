@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "event_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "device_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "event_type": {
+      "const": "CONTENT_ENDED"
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "end_reason": {
+      "enum": [
+        "CONTENT_COMPLETED",
+        "DETECTION_CLEARED",
+        "TRACK_LOST",
+        "TIMEOUT",
+        "MODEL_UNAVAILABLE",
+        "MANUAL_TEST",
+        "OTHER_TECHNICAL_REASON"
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "event_id",
+    "device_id",
+    "event_type",
+    "end_reason",
+    "occurred_at"
+  ]
+}

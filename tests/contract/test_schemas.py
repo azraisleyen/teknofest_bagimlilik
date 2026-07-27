@@ -1,5 +1,5 @@
 import json
-from pathlib import Path
+from importlib.resources import files
 
 import pytest
 
@@ -11,7 +11,8 @@ pytestmark = pytest.mark.skipif(jsonschema is None, reason="jsonschema dependenc
 
 
 def schema(name):
-    return json.loads(Path("contracts/v1", name).read_text())
+    resource = files("apps.qr").joinpath("schemas", "v1", name)
+    return json.loads(resource.read_text(encoding="utf-8"))
 
 
 def test_unknown_and_sensitive_fields_rejected():

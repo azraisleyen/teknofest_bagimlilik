@@ -13,6 +13,27 @@ dependencies = [
  "django-otp==1.6.1", "httpx==0.28.1"
 ]
 
+[tool.setuptools]
+package-dir = {sentra_qr_client = "clients/python/sentra_qr_client"}
+include-package-data = false
+packages = [
+ "apps", "apps.audit", "apps.audit.migrations", "apps.core", "apps.core.migrations",
+ "apps.demo", "apps.demo.migrations", "apps.devices", "apps.devices.management",
+ "apps.devices.management.commands", "apps.devices.migrations", "apps.interactions",
+ "apps.interactions.management", "apps.interactions.management.commands",
+ "apps.interactions.migrations", "apps.qr", "apps.qr.management",
+ "apps.qr.management.commands", "apps.qr.migrations", "apps.support",
+ "apps.support.migrations", "apps.surveys", "apps.surveys.management",
+ "apps.surveys.management.commands", "apps.surveys.migrations", "apps.yedam",
+ "apps.yedam.management", "apps.yedam.management.commands", "apps.yedam.migrations",
+ "config", "config.settings", "sentra_qr_client",
+]
+
+[tool.setuptools.package-data]
+"apps.qr" = ["schemas/v1/*.json"]
+"apps.support" = ["static/css/*.css", "static/js/*.js", "templates/support/*.html"]
+"apps.demo" = ["templates/demo/*.html"]
+
 [tool.ruff]
 target-version = "py312"
 line-length = 100
