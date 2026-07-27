@@ -1,0 +1,2 @@
+# Admin roles
+Create least-privilege Django groups: **Center manager** (`yedam` change/view), **Survey manager** (`surveys` change/view), **Read-only auditor** (audit/event/token view only), and **System administrator** (explicit required permissions, not routine superuser use). Production admin permission additionally requires a verified django-otp TOTP session. Enrolment, recovery, and role assignments require dual operational review. Audit records and QR event/token metadata must remain read-only in operational admin procedures.
