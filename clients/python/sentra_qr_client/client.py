@@ -1,8 +1,12 @@
-import random
+import secrets
 import time
 from dataclasses import dataclass
 
 import httpx
+
+
+def _retry_jitter():
+    return secrets.randbelow(5_000_000) / 100_000_000
 
 
 @dataclass(frozen=True)
@@ -29,7 +33,7 @@ class SentraQrClient:
             except (httpx.TimeoutException, httpx.NetworkError):
                 if not retry_safe or attempt == self.max_retries:
                     raise RuntimeError("SENTRA QR endpoint unavailable") from None
-                time.sleep((2**attempt) * 0.1 + random.random() * 0.05)
+                time.sleep((2**attempt) * 0.1 + _retry_jitter())
 
     def start_content_event(self, payload):
         return self._post("/api/v1/qr/events", payload, payload["idempotency_key"])

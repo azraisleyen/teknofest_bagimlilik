@@ -18,7 +18,7 @@ ALLOWED_HOSTS = [
     x.strip() for x in env("ALLOWED_HOSTS", "localhost,127.0.0.1,testserver").split(",")
 ]
 INSTALLED_APPS = [
-    "django.contrib.admin",
+    "config.admin.SentraAdminConfig",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
@@ -52,7 +52,7 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates"],
+        "DIRS": [],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -72,7 +72,6 @@ USE_I18N = True
 USE_TZ = True
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_DIRS = [BASE_DIR / "static"]
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 PUBLIC_BASE_URL = env("PUBLIC_BASE_URL", "http://localhost:8000").rstrip("/")
 GENERAL_SUPPORT_URL = env("GENERAL_SUPPORT_URL", PUBLIC_BASE_URL + "/support/")
