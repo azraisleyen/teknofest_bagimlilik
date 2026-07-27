@@ -2,7 +2,11 @@ import uuid
 
 from django.conf import settings
 from django.utils import timezone
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
 from rest_framework import serializers
+from rest_framework.authentication import BaseAuthentication
+from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -18,9 +22,10 @@ class StartSerializer(serializers.Serializer):
 
 
 class SurveyStartView(APIView):
-    authentication_classes = []
-    permission_classes = []
+    authentication_classes: list[type[BaseAuthentication]] = []
+    permission_classes: list[type[BasePermission]] = []
 
+    @extend_schema(request=StartSerializer, responses={201: OpenApiTypes.OBJECT})
     def post(self, request):
         s = StartSerializer(data=request.data)
         s.is_valid(raise_exception=True)
@@ -95,9 +100,10 @@ class ResponseSerializer(serializers.Serializer):
 
 
 class SurveyResponseView(APIView):
-    authentication_classes = []
-    permission_classes = []
+    authentication_classes: list[type[BaseAuthentication]] = []
+    permission_classes: list[type[BasePermission]] = []
 
+    @extend_schema(request=ResponseSerializer, responses=OpenApiTypes.OBJECT)
     def post(self, request, session_id):
         session = SurveySession.objects.get(session_id=session_id, status="STARTED")
         s = ResponseSerializer(data=request.data)
@@ -117,10 +123,11 @@ class SurveyResponseView(APIView):
 
 
 class SurveyFinishView(APIView):
-    authentication_classes = []
-    permission_classes = []
+    authentication_classes: list[type[BaseAuthentication]] = []
+    permission_classes: list[type[BasePermission]] = []
     status_value = "COMPLETED"
 
+    @extend_schema(request=None, responses=OpenApiTypes.OBJECT)
     def post(self, request, session_id):
         session = SurveySession.objects.get(session_id=session_id, status="STARTED")
         session.status = self.status_value

@@ -1,9 +1,8 @@
 import json
 from datetime import timezone as dt_timezone
-from pathlib import Path
+from importlib.resources import files
 
 import jsonschema
-from django.conf import settings
 
 
 class ContractError(ValueError):
@@ -14,17 +13,17 @@ def validate_event(payload):
     event_type = payload.get("event_type")
     if event_type not in {"CONTENT_STARTED", "CONTENT_ENDED"}:
         raise ContractError("UNSUPPORTED_EVENT_TYPE")
-    path = (
-        Path(settings.BASE_DIR)
-        / "contracts/v1"
-        / (
+    schema = files("apps.qr").joinpath(
+        "schemas",
+        "v1",
+        (
             "content-started.schema.json"
             if event_type == "CONTENT_STARTED"
             else "content-ended.schema.json"
-        )
+        ),
     )
     try:
-        jsonschema.validate(payload, json.loads(path.read_text()))
+        jsonschema.validate(payload, json.loads(schema.read_text(encoding="utf-8")))
     except jsonschema.ValidationError as exc:
         raise ContractError("INVALID_EVENT") from exc
     from django.utils.dateparse import parse_datetime

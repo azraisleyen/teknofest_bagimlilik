@@ -1,7 +1,11 @@
 import uuid
 
 from django.utils import timezone
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
 from rest_framework import serializers
+from rest_framework.authentication import BaseAuthentication
+from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
@@ -18,11 +22,12 @@ class InteractionSerializer(serializers.Serializer):
 
 
 class InteractionView(APIView):
-    authentication_classes = []
-    permission_classes = []
+    authentication_classes: list[type[BaseAuthentication]] = []
+    permission_classes: list[type[BasePermission]] = []
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "public"
 
+    @extend_schema(request=InteractionSerializer, responses={201: OpenApiTypes.OBJECT})
     def post(self, request):
         s = InteractionSerializer(data=request.data)
         s.is_valid(raise_exception=True)

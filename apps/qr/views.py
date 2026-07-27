@@ -1,6 +1,8 @@
 from django.utils import timezone
+from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.authentication import BaseAuthentication
+from rest_framework.permissions import BasePermission, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
@@ -13,16 +15,17 @@ from .services import DomainError, EventService
 
 
 class HealthView(APIView):
-    authentication_classes = []
-    permission_classes = []
+    authentication_classes: list[type[BaseAuthentication]] = []
+    permission_classes: list[type[BasePermission]] = []
 
+    @extend_schema(request=None, responses=OpenApiTypes.OBJECT)
     def get(self, request):
         return Response({"status": "ok", "database": "available", "version": "1.0.0"})
 
 
 class EventView(APIView):
-    authentication_classes = [DeviceAuthentication]
-    permission_classes = [IsAuthenticated]
+    authentication_classes: list[type[BaseAuthentication]] = [DeviceAuthentication]
+    permission_classes: list[type[BasePermission]] = [IsAuthenticated]
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "edge"
 
@@ -63,9 +66,10 @@ class EventView(APIView):
 
 
 class DisplayEventView(APIView):
-    authentication_classes = [DeviceAuthentication]
-    permission_classes = [IsAuthenticated]
+    authentication_classes: list[type[BaseAuthentication]] = [DeviceAuthentication]
+    permission_classes: list[type[BasePermission]] = [IsAuthenticated]
 
+    @extend_schema(request=DisplayEventSerializer, responses=OpenApiTypes.OBJECT)
     def post(self, request):
         serializer = DisplayEventSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -86,14 +90,14 @@ class DisplayEventView(APIView):
                 fallback_reason=data.get("fallback_reason", ""),
             )
             return Response({"display_session_id": session.display_session_id}, status=201)
-        session = (
+        active_session = (
             QrDisplaySession.objects.filter(
                 event=event, device=request.user, display_ended_at__isnull=True
             )
             .order_by("-created_at")
             .first()
         )
-        if session:
-            session.display_ended_at = timezone.now()
-            session.save(update_fields=["display_ended_at"])
+        if active_session:
+            active_session.display_ended_at = timezone.now()
+            active_session.save(update_fields=["display_ended_at"])
         return Response({"status": "accepted"})

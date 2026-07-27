@@ -18,7 +18,7 @@ ALLOWED_HOSTS = [
     x.strip() for x in env("ALLOWED_HOSTS", "localhost,127.0.0.1,testserver").split(",")
 ]
 INSTALLED_APPS = [
-    "django.contrib.admin",
+    "config.admin.SentraAdminConfig",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
@@ -52,7 +52,7 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates"],
+        "DIRS": [],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
