@@ -4,6 +4,24 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parents[2]
 
 
+def _load_local_dotenv():
+    """Load a small, dependency-free .env file without overriding the process."""
+    if os.environ.get("DJANGO_SETTINGS_MODULE", "").endswith("production"):
+        return
+    path = BASE_DIR / ".env"
+    if not path.is_file():
+        return
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        name, value = line.split("=", 1)
+        os.environ.setdefault(name.strip(), value.strip().strip("'\""))
+
+
+_load_local_dotenv()
+
+
 def env(name, default=None):
     return os.environ.get(name, default)
 
@@ -77,12 +95,15 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 PUBLIC_BASE_URL = env("PUBLIC_BASE_URL", "http://localhost:8000").rstrip("/")
 GENERAL_SUPPORT_URL = env("GENERAL_SUPPORT_URL", PUBLIC_BASE_URL + "/support/")
 OFFICIAL_YEDAM_DIRECTORY_URL = env(
-    "OFFICIAL_YEDAM_DIRECTORY_URL", "https://www.yedam.org.tr/yesilay-danismanlik-merkezi"
+    "OFFICIAL_YEDAM_DIRECTORY_URL", "https://www.yedam.org.tr/iletisim"
 )
 TOKEN_KEYS = {
-    env("TOKEN_KEY_VERSION", "v1"): env(
-        "TOKEN_KEY_V1", "development-token-key-change-me-at-least-32-bytes"
-    )
+    part.split("=", 1)[0]: part.split("=", 1)[1]
+    for part in env(
+        "TOKEN_KEYS",
+        f"{env('TOKEN_KEY_VERSION', 'v1')}={env('TOKEN_KEY_V1', 'development-token-key-change-me-at-least-32-bytes')}",
+    ).split(",")
+    if "=" in part
 }
 TOKEN_KEY_VERSION = env("TOKEN_KEY_VERSION", "v1")
 QR_CONTEXT_MINUTES = int(env("QR_CONTEXT_MINUTES", "15"))
@@ -91,11 +112,13 @@ ANONYMOUS_SESSION_MINUTES = int(env("ANONYMOUS_SESSION_MINUTES", "30"))
 MAX_REQUEST_BODY = int(env("MAX_REQUEST_BODY", "32768"))
 SURVEY_COMMENT_MAX = int(env("SURVEY_COMMENT_MAX", "500"))
 YEDAM_STALE_DAYS = int(env("YEDAM_STALE_DAYS", "180"))
+QR_EVENT_CLOCK_SKEW_SECONDS = int(env("QR_EVENT_CLOCK_SKEW_SECONDS", "300"))
+QR_EVENT_HARD_TIMEOUT_MINUTES = int(env("QR_EVENT_HARD_TIMEOUT_MINUTES", "30"))
 QR_ERROR_CORRECTION = env("QR_ERROR_CORRECTION", "M")
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "EXCEPTION_HANDLER": "apps.core.errors.exception_handler",
-    "DEFAULT_THROTTLE_RATES": {"public": "60/min", "edge": "120/min"},
+    "DEFAULT_THROTTLE_RATES": {"public": "60/min", "survey": "30/min", "edge": "120/min"},
 }
 SPECTACULAR_SETTINGS = {"TITLE": "SENTRA QR API", "VERSION": "1.0.0", "SERVE_INCLUDE_SCHEMA": False}
 SESSION_COOKIE_HTTPONLY = True

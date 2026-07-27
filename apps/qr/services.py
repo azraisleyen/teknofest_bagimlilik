@@ -3,6 +3,7 @@ from datetime import timedelta
 from django.conf import settings
 from django.db import IntegrityError, transaction
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 
 from .contracts import validate_event
 from .models import QrEventContext, QrToken
@@ -24,6 +25,9 @@ class EventService:
             or payload["idempotency_key"] != header_key
         ):
             raise DomainError("IDEMPOTENCY_MISMATCH")
+        if payload["location_id"] != device.location_id:
+            raise DomainError("LOCATION_MISMATCH")
+        EventService.expire_for_device(device)
         existing = (
             QrEventContext.objects.select_for_update().filter(event_id=payload["event_id"]).first()
         )
@@ -103,8 +107,13 @@ class EventService:
         active = QrEventContext.objects.filter(device=device, status="ACTIVE").first()
         if not active or active.event_id != event.event_id:
             raise DomainError("MISMATCHED_END_EVENT", 409)
+        ended_at = parse_datetime(payload.get("occurred_at", ""))
+        if ended_at is None or timezone.is_naive(ended_at):
+            raise DomainError("INVALID_EVENT")
+        if ended_at < event.started_at:
+            raise DomainError("END_BEFORE_START")
         event.status = "ENDED"
-        event.ended_at = payload["occurred_at"]
+        event.ended_at = ended_at
         event.end_reason = payload["end_reason"]
         event.save(update_fields=["status", "ended_at", "end_reason", "updated_at"])
         event.token.status = "REVOKED"
@@ -116,3 +125,22 @@ class EventService:
             "qr_mode": "GENERAL",
             "general_url": settings.GENERAL_SUPPORT_URL,
         }
+
+    @staticmethod
+    @transaction.atomic
+    def expire_for_device(device=None):
+        cutoff = timezone.now() - timedelta(minutes=settings.QR_EVENT_HARD_TIMEOUT_MINUTES)
+        events = QrEventContext.objects.select_for_update().filter(
+            status="ACTIVE", started_at__lt=cutoff
+        )
+        if device is not None:
+            events = events.filter(device=device)
+        count = 0
+        for event in events:
+            event.status = "EXPIRED"
+            event.ended_at = timezone.now()
+            event.end_reason = "HARD_TIMEOUT"
+            event.save(update_fields=["status", "ended_at", "end_reason", "updated_at"])
+            QrToken.objects.filter(event=event).update(status="REVOKED", revoked_at=timezone.now())
+            count += 1
+        return count

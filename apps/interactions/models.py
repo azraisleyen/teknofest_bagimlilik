@@ -24,3 +24,9 @@ class QrInteraction(models.Model):
 
     class Meta:
         indexes = [models.Index(fields=["token", "anonymous_session_id", "interaction_type"])]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["token", "anonymous_session_id", "interaction_type"],
+                name="unique_token_session_interaction",
+            )
+        ]

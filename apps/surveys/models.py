@@ -27,6 +27,8 @@ class SurveyQuestion(models.Model):
     text = models.TextField()
     required = models.BooleanField(default=False)
     max_length = models.PositiveIntegerField(null=True, blank=True)
+    metric_key = models.CharField(max_length=80, blank=True)
+    reverse_scored = models.BooleanField(default=False)
 
     class Meta:
         ordering = ["position"]
@@ -48,6 +50,12 @@ class SurveySession(models.Model):
     status = models.CharField(max_length=16, default="STARTED")
     started_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)
+    consent_version = models.CharField(max_length=40, blank=True)
+    consent_accepted_at = models.DateTimeField(null=True, blank=True)
+    privacy_notice_version = models.CharField(max_length=40, blank=True)
+    survey_version = models.PositiveIntegerField(default=1)
+    context_mode = models.CharField(max_length=20, default="GLOBAL_GENERAL")
+    context_snapshot = models.JSONField(default=dict)
 
 
 class SurveyResponse(models.Model):

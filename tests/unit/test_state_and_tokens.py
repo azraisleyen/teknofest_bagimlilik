@@ -1,27 +1,22 @@
-import base64
-import hashlib
-import hmac
+import os
 from pathlib import Path
 
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.test")
+import django
 
-def token(key, device, event):
-    return (
-        base64.urlsafe_b64encode(
-            hmac.new(
-                key.encode(), f"sentra-qr|1|{device}|{event}".encode(), hashlib.sha256
-            ).digest()
-        )
-        .rstrip(b"=")
-        .decode()
-    )
+django.setup()
+from django.test import override_settings  # noqa: E402
+
+from apps.qr.tokens import TokenService  # noqa: E402
 
 
-def test_token_properties():
-    first = token("k" * 32, "device", "event-a")
-    assert first == token("k" * 32, "device", "event-a")
-    assert first != token("k" * 32, "device", "event-b")
-    assert len(first) >= 22
-    assert "device" not in first
+@override_settings(TOKEN_KEYS={"old": "o" * 32, "new": "n" * 32}, TOKEN_KEY_VERSION="new")  # noqa: S106
+def test_token_properties_and_rotation():
+    first, version = TokenService.create("device", "event-a")
+    old, old_version = TokenService.create("device", "event-a", "old")
+    assert version == "new" and old_version == "old"
+    assert first != old and "device" not in first
+    assert TokenService.lookup_hash(first) != first
 
 
 def test_web_controller_has_race_guards():
