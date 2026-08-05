@@ -11,6 +11,9 @@ class YedamCenter(models.Model):
     address = models.TextField()
     map_place_id = models.CharField(max_length=255, blank=True)
     map_url = models.URLField(blank=True)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    coordinate_source = models.CharField(max_length=200, blank=True)
     appointment_number = models.CharField(max_length=30, default="115")
     official_source_url = models.URLField()
     last_verified_at = models.DateTimeField()
@@ -18,6 +21,9 @@ class YedamCenter(models.Model):
     active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["city", "district", "center_name"]
 
 
 class LocationCenterMapping(models.Model):

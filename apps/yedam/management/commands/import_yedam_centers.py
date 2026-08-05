@@ -28,6 +28,9 @@ class Command(BaseCommand):
                 "official_source_url",
                 "last_verified_at",
                 "verified_by",
+                "latitude",
+                "longitude",
+                "coordinate_source",
             }
             if not required <= row.keys() or (
                 row.get("map_url") and not safe_map_url(row["map_url"])

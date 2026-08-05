@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["decision_id", "content_age_band", "selection_mode", "audience_mode"],
+  "properties": {
+    "decision_id": {"type": "string", "format": "uuid"},
+    "content_age_band": {"enum": ["YOUNG_ADULT", "MIDDLE_AGE", "OLDER_ADULT", "GENERAL"]},
+    "selection_mode": {"type": "string"},
+    "audience_mode": {"enum": ["SINGLE", "MULTIPLE_SAME_AGE", "MULTIPLE_DIFFERENT_AGE", "UNKNOWN"]}
+  }
+}

@@ -1,4 +1,5 @@
 from datetime import timedelta
+from math import asin, cos, radians, sin, sqrt
 from urllib.parse import urlencode, urlparse
 
 from django.conf import settings
@@ -47,3 +48,14 @@ def center_for_location(location_id):
     ):
         return mapping.backup_center
     return None
+
+
+def haversine_km(latitude, longitude, center):
+    """Pure helper used by tests; production nearest-center calculation runs in-browser."""
+    lat1, lon1, lat2, lon2 = map(
+        radians,
+        [float(latitude), float(longitude), float(center.latitude), float(center.longitude)],
+    )
+    dlat, dlon = lat2 - lat1, lon2 - lon1
+    value = sin(dlat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(dlon / 2) ** 2
+    return 6371.0088 * 2 * asin(sqrt(value))

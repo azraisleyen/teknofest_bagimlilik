@@ -1,0 +1,1 @@
+export class WebSocketDetectionAdapter{constructor(url){this.url=url;this.socket=null}start(onSignal){this.socket=new WebSocket(this.url);this.socket.addEventListener("message",event=>onSignal(JSON.parse(event.data)))}stop(){this.socket?.close()}}

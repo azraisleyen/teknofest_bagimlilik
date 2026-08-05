@@ -15,7 +15,15 @@ class NoBulkDeleteAdmin(admin.ModelAdmin):
 
 @admin.register(YedamCenter)
 class YedamCenterAdmin(NoBulkDeleteAdmin):
-    list_display = ("center_name", "city", "district", "active", "last_verified_at")
+    list_display = (
+        "center_name",
+        "city",
+        "district",
+        "latitude",
+        "longitude",
+        "active",
+        "last_verified_at",
+    )
     list_filter = ("active", "city", "district")
     search_fields = ("center_name", "address", "city", "district")
 

@@ -1,64 +1,61 @@
-# SENTRA Modular QR Support, Referral, and Research System
+# SENTRA — Modüler Farkındalık, QR ve Destek Sistemi
 
-Independent Django 5.2 modular monolith for authenticated content lifecycle events, safe general/dynamic QR links, YEDAM referrals, an optional privacy-preserving survey, and a removable simulator. It performs **no camera, AI, person, age, or smoking detection**.
+SENTRA; modelden bağımsız tespit sinyallerini karşılayan, uygun farkındalık içeriğini oynatan, olay bazlı güvenli QR üreten, mobil YEDAM yönlendirmesi ve gönüllü mikro anket sunan Django 5.2 tabanlı modüler bir prototiptir.
 
-## Quick start
+Bu depo gerçek kamera/model ağırlığı içermez. Geliştirme ekranındaki işlenmiş tespit videosu yalnızca arayüz olayını simüle eder ve model başarımı kanıtı değildir. Gerçek modeller `DetectionProvider` adaptör sözleşmesi üzerinden daha sonra bağlanır.
 
-Python 3.12 is required. Copy `.env.example` to `.env`, replace development placeholders, and ensure `PUBLIC_BASE_URL` is reachable by the intended scanner.
+## Hızlı başlangıç — Windows PowerShell
 
-**Windows PowerShell**
+Python 3.12 gereklidir.
+
 ```powershell
-py -m venv .venv
+cd C:\teknofest_bagimlilik
+Copy-Item .env.example .env
+python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-py -m pip install --upgrade pip
-py -m pip install -r requirements/development.txt
-py manage.py migrate
-py manage.py generate_general_qr
-py manage.py seed_demo_data
-py manage.py runserver
-```
-
-**Linux/macOS**
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install -r requirements/development.txt
+python -m pip install -r requirements\development.txt
 python manage.py migrate
-python manage.py generate_general_qr
+python manage.py seed_demo_referral_data
+python manage.py seed_sentra_content
 python manage.py seed_demo_data
-python manage.py runserver
+python manage.py generate_general_qr
+python manage.py runserver 0.0.0.0:8000
 ```
 
-Create a device in `/admin/`, then run `python manage.py create_device_credential DEVICE_UUID`; its secret is shown exactly once. Set `ENABLE_DEMO_UI=True` only in development and open `/demo/`. General mobile support is `/support/`; dynamic links use `/q/{opaque-token}`. Development OpenAPI and Swagger are `/api/schema/` and `/api/docs/`; admin is `/admin/`.
+Geliştirme ekranı: `http://127.0.0.1:8000/display/`
 
-## Commands and quality
+Mobil destek: `http://127.0.0.1:8000/support/`
+
+Mikro anket: `http://127.0.0.1:8000/survey/`
+
+Fiziksel telefon testi için `PUBLIC_BASE_URL`, `GENERAL_SUPPORT_URL` ve `ALLOWED_HOSTS` değerlerini bilgisayarın güncel Wi‑Fi IPv4 adresine göre düzenleyin. Telefon ve bilgisayar aynı ağda olmalıdır. Tarayıcı konumu yalnızca güvenli HTTPS bağlamında güvenilir biçimde çalışır; HTTP/LAN testinde il seçimi kullanılabilir.
+
+## Mimari sınırlar
+
+- QR yalnızca tahmin edilemeyen opak olay token’ı taşır; kişi sayısı, yaş tahmini, güven skoru ve kamera verisi taşımaz.
+- Tokenın yalnızca SHA-256 özeti veritabanında saklanır.
+- Normal içerik bitişinde olay QR’ı hemen iptal edilmez; bağlam süresi ve ekrandaki 45 saniyelik ek süre ayrı yönetilir.
+- Yaş modeli yoksa, kararsızsa veya farklı yaş bantları varsa `GENERAL` içerik seçilir.
+- `focus_roi` yalnızca geçiş sırasında tarayıcı belleğinde kullanılır; sunucuya ve ankete gönderilmez.
+- Kullanıcı koordinatları en yakın merkez hesabı için tarayıcıda kullanılır ve sunucuya gönderilmez.
+- Konum izni reddedilirse “cihaz konumuna göre” iddiası gösterilmez; il seçimi ve resmî merkez dizini sunulur.
+- SENTRA, YEDAM/Yeşilay ile resmî ortaklık iddiasında bulunmaz.
+- İçerik paketleri psikolog ve sağlık inceleme durumu olmadan kesin uygunluk iddiasıyla yayımlanmamalıdır.
+
+## Üretime hazırlık
+
+`ENABLE_DISPLAY_SIMULATOR` üretimde kapalı olmalıdır. Gerçek model adaptörü, doğrulanmış YEDAM merkez kataloğu, HTTPS, PostgreSQL/Redis, etik-KVKK kararı, psikolog/sağlık içerik onayı ve fiziksel QR testleri üretim öncesinde tamamlanmalıdır.
 
 ```bash
-python manage.py makemigrations --check --dry-run
 python manage.py check
-python manage.py spectacular --file openapi.yaml --validate
-pytest --cov=apps --cov=clients
-ruff check . && ruff format --check .
+python manage.py makemigrations --check --dry-run
+pytest
+ruff check .
+ruff format --check .
 mypy apps clients/python
 bandit -r apps clients -x '*/migrations/*'
-pip-audit -r requirements/production.txt
 DJANGO_SETTINGS_MODULE=config.settings.production python manage.py check --deploy
-python manage.py purge_expired_qr_data --dry-run
-python manage.py check_yedam_verification
-python manage.py export_aggregate_metrics
 ```
 
-## Docker and operations
-
-Set production values in `.env`, then run `docker compose build && docker compose up -d db app`. Run migrations once as a release task: `docker compose run --rm app python manage.py migrate`; do not run migrations concurrently on every replica. Back up PostgreSQL with encrypted `pg_dump`, test restores, retain the previous image for rollback, and serve `/static/qr/general.svg` plus a static support fallback from highly available infrastructure. Redis is enabled with `docker compose --profile redis up`.
-
-A phone cannot reach the computer's `localhost`. For physical testing bind to `0.0.0.0`, use a trusted LAN address in `PUBLIC_BASE_URL`, and restrict the firewall. Optional tunnels must be configured manually; no tunnel or credentials are created here.
-
-See `docs/` for architecture, contracts, state machine, privacy, security, deployment, operations, integration, data definitions, and the pending physical QR test plan. Future SmokeVision integration uses only the versioned server-to-server events and framework-independent clients; it must never send camera/person/model data.
-
-## Uçtan uca destek bağlamları
-
-Sistem GPS istemez ve kamera/model verisi işlemez. `/support/` global fallback, `/s/<opak-token>` sabit cihaz kurulumu, `/q/<opak-token>` ise süreli orchestrator olayı bağlamıdır. Cihaz token'ları `manage_device_support_token create|rotate|revoke DEVICE_UUID` ile yönetilir; yalnızca SHA-256 özeti saklanır. Merkez yönlendirmesi doğrulanmış cihaz konum eşlemesinden üretilir ve başlangıç konumu Google Maps URL'sine eklenmez.
-
-Windows geliştirmede Python 3.12 doğrulandıktan sonra `python` komutu kullanılabilir. `.env.example` dosyasını `.env` olarak kopyalayın; gerçek süreç environment değerleri dosyadakilerden önceliklidir. Telefon testi için `PUBLIC_BASE_URL=http://LAN_IP:8000`, `ALLOWED_HOSTS=LAN_IP,localhost`, sınırlı yerel firewall kuralı ve `python manage.py runserver 0.0.0.0:8000` gerekir. Demo sırası: `migrate`, `seed_demo_referral_data`, `seed_demo_data`, `generate_general_qr`, `ENABLE_DEMO_UI=True` ile sunucuyu açma. Demo merkezi üretim verisi değildir.
+Ayrıntılar için [docs/SENTRA-UPGRADE.md](docs/SENTRA-UPGRADE.md), [docs/MODULAR-ARCHITECTURE.md](docs/MODULAR-ARCHITECTURE.md) ve [docs/PRIVACY-AND-LOCATION.md](docs/PRIVACY-AND-LOCATION.md) dosyalarına bakın.

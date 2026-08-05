@@ -10,3 +10,42 @@ db.sqlite3
 .env
 staticfiles/
 openapi.yaml
+# Python
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+.coverage
+htmlcov/
+
+# Yerel yapılandırma ve veriler
+.env
+.env.local
+.env.development
+.env.production
+!.env.example
+db.sqlite3
+*.sqlite3-journal
+
+# Çalışma zamanında üretilen dosyalar
+staticfiles/
+media/uploads/
+logs/
+*.log
+
+# JavaScript ve derleme
+node_modules/
+dist/
+build/
+
+# IDE ve işletim sistemi
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

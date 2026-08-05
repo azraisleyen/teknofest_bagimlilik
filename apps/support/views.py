@@ -1,12 +1,11 @@
-import secrets
 import uuid
 
 from django.conf import settings
 from django.shortcuts import render
-from django.utils import timezone
 
 from apps.interactions.models import QrInteraction
-from apps.qr.models import DeviceSupportToken, QrToken
+from apps.qr.models import DeviceSupportToken
+from apps.qr.token_resolution import TokenResolutionService
 from apps.qr.tokens import TokenService
 from apps.yedam.services import build_map_url, center_for_location
 
@@ -27,24 +26,14 @@ def support_page(request, token=None, installation_token=None):
     dynamic = False
     device_token = None
     if token:
-        record = (
-            QrToken.objects.select_related("event")
-            .filter(
-                token_hash=TokenService.lookup_hash(token),
-                status="ACTIVE",
-                mapping_expires_at__gt=timezone.now(),
-            )
-            .first()
-        )
-        if (
-            record
-            and secrets.compare_digest(record.token_hash, TokenService.lookup_hash(token))
-            and record.context_expires_at > timezone.now()
-        ):
-            dynamic = True
-            mapping = record
+        resolution = TokenResolutionService.resolve(token)
+        if resolution.token:
+            mapping = resolution.token if resolution.context_available else None
+            dynamic = resolution.context_available
             QrInteraction.objects.get_or_create(
-                token=record, anonymous_session_id=sid, interaction_type="LANDING_VIEW"
+                token=resolution.token,
+                anonymous_session_id=sid,
+                interaction_type="LANDING_VIEW",
             )
     elif installation_token:
         device_token = (
@@ -60,8 +49,15 @@ def support_page(request, token=None, installation_token=None):
     center = center_for_location(location_id) if location_id else None
     map_url = build_map_url(center) if center else ""
     from apps.surveys.models import SurveyDefinition
+    from apps.yedam.models import YedamCenter
 
     survey_available = SurveyDefinition.objects.filter(active=True, status="PUBLISHED").exists()
+    cities = list(
+        YedamCenter.objects.filter(active=True, latitude__isnull=False, longitude__isnull=False)
+        .values_list("city", flat=True)
+        .distinct()
+        .order_by("city")
+    )
     response = render(
         request,
         "support/page.html",
@@ -74,6 +70,7 @@ def support_page(request, token=None, installation_token=None):
             "dynamic": dynamic,
             "token": token or "",
             "survey_available": survey_available,
+            "cities": cities,
         },
     )
     response.set_cookie(

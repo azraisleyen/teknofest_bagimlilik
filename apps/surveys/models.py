@@ -23,15 +23,23 @@ class SurveyQuestion(models.Model):
     question_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     survey = models.ForeignKey(SurveyDefinition, models.PROTECT, related_name="questions")
     position = models.PositiveIntegerField()
+    code = models.CharField(max_length=80, default="")
+    section = models.CharField(max_length=80, blank=True)
     question_type = models.CharField(max_length=20)
     text = models.TextField()
+    help_text = models.TextField(blank=True)
     required = models.BooleanField(default=False)
     max_length = models.PositiveIntegerField(null=True, blank=True)
     metric_key = models.CharField(max_length=80, blank=True)
     reverse_scored = models.BooleanField(default=False)
+    allow_not_applicable = models.BooleanField(default=False)
+    display_condition = models.JSONField(default=dict, blank=True)
 
     class Meta:
         ordering = ["position"]
+        constraints = [
+            models.UniqueConstraint(fields=["survey", "code"], name="unique_survey_question_code")
+        ]
 
 
 class SurveyChoice(models.Model):

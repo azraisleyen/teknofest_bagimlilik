@@ -75,13 +75,16 @@ class EventService:
             token
             or TokenService.create(event.device_id, event.event_id, event.token.key_version)[0]
         )
+        display_until = event.expected_end_at
+        if event.ended_at:
+            display_until = event.ended_at + timedelta(seconds=settings.QR_DISPLAY_GRACE_SECONDS)
         return {
             "schema_version": "1.0",
             "event_id": str(event.event_id),
             "qr_mode": "DYNAMIC",
             "public_url": f"{settings.PUBLIC_BASE_URL}/q/{token}",
             "context_expires_at": event.token.context_expires_at,
-            "display_until": event.expected_end_at,
+            "display_until": display_until,
         }
 
     @staticmethod
@@ -98,12 +101,7 @@ class EventService:
         if not event:
             raise DomainError("START_EVENT_NOT_FOUND", 409)
         if event.status == "ENDED":
-            return {
-                "schema_version": "1.0",
-                "event_id": str(event.event_id),
-                "qr_mode": "GENERAL",
-                "general_url": settings.GENERAL_SUPPORT_URL,
-            }
+            return EventService._result(event)
         active = QrEventContext.objects.filter(device=device, status="ACTIVE").first()
         if not active or active.event_id != event.event_id:
             raise DomainError("MISMATCHED_END_EVENT", 409)
@@ -116,15 +114,11 @@ class EventService:
         event.ended_at = ended_at
         event.end_reason = payload["end_reason"]
         event.save(update_fields=["status", "ended_at", "end_reason", "updated_at"])
-        event.token.status = "REVOKED"
-        event.token.revoked_at = timezone.now()
-        event.token.save(update_fields=["status", "revoked_at"])
-        return {
-            "schema_version": "1.0",
-            "event_id": str(event.event_id),
-            "qr_mode": "GENERAL",
-            "general_url": settings.GENERAL_SUPPORT_URL,
-        }
+        # Normal content completion ends the display event but deliberately keeps
+        # the opaque support token valid until context_expires_at. This allows a
+        # person to scan during the post-animation grace period without exposing
+        # model output in the QR value.
+        return EventService._result(event)
 
     @staticmethod
     @transaction.atomic

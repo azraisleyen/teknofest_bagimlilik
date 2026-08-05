@@ -26,8 +26,11 @@ class RequestSafetyMiddleware:
             )
         response = self.get_response(request)
         response["X-Correlation-ID"] = request.correlation_id
-        response["Permissions-Policy"] = "geolocation=(), camera=(), microphone=()"
+        location_enabled = request.path.startswith(("/support/", "/q/", "/s/", "/survey/"))
+        geolocation = "(self)" if location_enabled else "()"
+        response["Permissions-Policy"] = f"geolocation={geolocation}, camera=(), microphone=()"
         response["Content-Security-Policy"] = (
-            "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; form-action 'self'; frame-ancestors 'none'"
+            "default-src 'self'; img-src 'self' data:; media-src 'self'; style-src 'self'; "
+            "script-src 'self'; connect-src 'self'; form-action 'self'; frame-ancestors 'none'"
         )
         return response

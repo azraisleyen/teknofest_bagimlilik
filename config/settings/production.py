@@ -5,6 +5,8 @@ from .base import *  # noqa: F403,F401
 DEBUG = False
 if ENABLE_DEMO_UI:
     raise ImproperlyConfigured("ENABLE_DEMO_UI must be false in production")
+if ENABLE_DISPLAY_SIMULATOR:
+    raise ImproperlyConfigured("ENABLE_DISPLAY_SIMULATOR must be false in production")
 if SECRET_KEY.startswith("development-"):
     raise ImproperlyConfigured("DJANGO_SECRET_KEY is required")
 if any("development-token" in value for value in TOKEN_KEYS.values()):

@@ -1,0 +1,1 @@
+export class ModelFusionAdapter{constructor(adapters,merge){this.adapters=adapters;this.merge=merge;this.buffer=[]}start(onSignal){this.adapters.forEach(adapter=>adapter.start(signal=>{this.buffer.push(signal);const fused=this.merge(this.buffer.splice(0));if(fused)onSignal(fused)}))}stop(){this.adapters.forEach(adapter=>adapter.stop())}}

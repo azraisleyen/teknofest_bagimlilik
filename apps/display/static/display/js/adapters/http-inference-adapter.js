@@ -1,0 +1,1 @@
+export class HTTPInferenceAdapter{constructor(url,{intervalMs=500}={}){this.url=url;this.intervalMs=intervalMs;this.timer=null}start(onSignal){this.timer=setInterval(async()=>{const response=await fetch(this.url,{headers:{Accept:"application/json"}});if(response.ok)onSignal(await response.json())},this.intervalMs)}stop(){clearInterval(this.timer)}}

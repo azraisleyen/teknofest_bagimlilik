@@ -1,8 +1,12 @@
 import uuid
+from datetime import timedelta
 
 from django.conf import settings
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
+from django.utils.html import strip_tags
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.decorators.http import require_GET
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers
@@ -12,16 +16,24 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
-from apps.qr.models import QrToken
-from apps.qr.tokens import TokenService
+from apps.qr.token_resolution import TokenResolutionService
 
-from .models import SurveyDefinition, SurveyQuestion, SurveyResponse, SurveySession
+from .engine import SurveyEngine
+from .models import SurveyQuestion, SurveyResponse, SurveySession
 
 
 class StartSerializer(serializers.Serializer):
     token = serializers.CharField(required=False, allow_blank=True, max_length=100)
     honeypot = serializers.CharField(required=False, allow_blank=True, write_only=True)
     consent = serializers.ChoiceField(choices=["yes"])
+    age_eligible = serializers.BooleanField()
+
+    def validate_age_eligible(self, value):
+        if value is not True:
+            raise serializers.ValidationError(
+                "Anket yalnızca 18 yaş ve üzeri katılımcılar içindir."
+            )
+        return value
 
 
 class SurveyStartView(APIView):
@@ -49,11 +61,7 @@ class SurveyStartView(APIView):
                 },
                 status=400,
             )
-        survey = (
-            SurveyDefinition.objects.filter(active=True, status="PUBLISHED")
-            .order_by("-version")
-            .first()
-        )
+        survey = SurveyEngine.active_definition()
         if not survey:
             return Response(
                 {
@@ -66,13 +74,8 @@ class SurveyStartView(APIView):
                 status=503,
             )
         raw = s.validated_data.get("token", "")
-        token = (
-            QrToken.objects.filter(
-                token_hash=TokenService.lookup_hash(raw), context_expires_at__gt=timezone.now()
-            ).first()
-            if raw
-            else None
-        )
+        resolution = TokenResolutionService.resolve(raw) if raw else None
+        token = resolution.token if resolution and resolution.context_available else None
         context = {}
         mode = "GLOBAL_GENERAL"
         if token:
@@ -110,13 +113,18 @@ class SurveyStartView(APIView):
                 "survey": {
                     "name": survey.name,
                     "version": survey.version,
-                    "label": "DRAFT/DEMO",
+                    "label": "Uzman incelemesi bekleyen taslak",
                     "questions": [
                         {
                             "id": q.question_id,
+                            "code": q.code,
+                            "section": q.section,
                             "text": q.text,
+                            "help_text": q.help_text,
                             "type": q.question_type,
                             "required": q.required,
+                            "allow_not_applicable": q.allow_not_applicable,
+                            "display_condition": q.display_condition,
                             "choices": [
                                 {"value": c.value, "label": c.label} for c in q.choices.all()
                             ],
@@ -149,13 +157,14 @@ class SurveyResponseView(APIView):
             SurveyQuestion, question_id=s.validated_data["question_id"], survey=session.survey
         )
         value = s.validated_data["value"]
-        if q.question_type == "LIKERT":
+        if q.question_type in {"LIKERT", "SINGLE_CHOICE"}:
             allowed = set(q.choices.values_list("value", flat=True))
             if not isinstance(value, str) or value not in allowed:
                 raise serializers.ValidationError("Geçersiz seçenek")
         elif q.question_type == "TEXT":
             if not isinstance(value, str):
                 raise serializers.ValidationError("Metin yanıtı gerekli")
+            value = strip_tags(value).strip()
         else:
             raise serializers.ValidationError("Desteklenmeyen soru türü")
         if isinstance(value, str) and len(value) > min(
@@ -173,8 +182,13 @@ class SurveyResponseView(APIView):
             sid = uuid.UUID(request.COOKIES.get("sentra_session"))
         except (ValueError, TypeError):
             sid = None
+        cutoff = timezone.now() - timedelta(minutes=settings.ANONYMOUS_SESSION_MINUTES)
         return get_object_or_404(
-            SurveySession, session_id=session_id, status="STARTED", anonymous_session_id=sid
+            SurveySession,
+            session_id=session_id,
+            status="STARTED",
+            anonymous_session_id=sid,
+            started_at__gte=cutoff,
         )
 
 
@@ -206,3 +220,32 @@ class SurveyFinishView(APIView):
 
 class SurveyDeclineView(SurveyFinishView):
     status_value = "DECLINED"
+
+
+@ensure_csrf_cookie
+@require_GET
+def survey_page(request):
+    value = request.COOKIES.get("sentra_session")
+    try:
+        uuid.UUID(value)
+    except (ValueError, TypeError):
+        value = str(uuid.uuid4())
+    response = render(
+        request,
+        "surveys/flow.html",
+        {
+            "token": request.GET.get("token", "")[:100],
+            "comment_max": settings.SURVEY_COMMENT_MAX,
+        },
+    )
+    response.set_cookie(
+        "sentra_session",
+        value,
+        max_age=settings.ANONYMOUS_SESSION_MINUTES * 60,
+        httponly=True,
+        secure=not settings.DEBUG,
+        samesite="Lax",
+    )
+    response["Cache-Control"] = "no-store"
+    response["X-Robots-Tag"] = "noindex, nofollow"
+    return response

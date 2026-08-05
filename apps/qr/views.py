@@ -29,7 +29,7 @@ class HealthView(APIView):
 class LiveHealthView(HealthView):
     @extend_schema(request=None, responses=OpenApiTypes.OBJECT)
     def get(self, request):
-        return Response({"status": "ok", "version": "1.0.0"})
+        return Response({"status": "ok", "version": "1.1.0"})
 
 
 class ReadyHealthView(HealthView):

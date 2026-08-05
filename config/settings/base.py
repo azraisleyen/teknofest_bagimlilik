@@ -47,6 +47,8 @@ INSTALLED_APPS = [
     "django_otp",
     "django_otp.plugins.otp_totp",
     "apps.core",
+    "apps.content",
+    "apps.display",
     "apps.devices",
     "apps.qr",
     "apps.support",
@@ -108,9 +110,10 @@ TOKEN_KEYS = {
 TOKEN_KEY_VERSION = env("TOKEN_KEY_VERSION", "v1")
 QR_CONTEXT_MINUTES = int(env("QR_CONTEXT_MINUTES", "15"))
 QR_MAPPING_HOURS = int(env("QR_MAPPING_HOURS", "24"))
+QR_DISPLAY_GRACE_SECONDS = int(env("QR_DISPLAY_GRACE_SECONDS", "45"))
 ANONYMOUS_SESSION_MINUTES = int(env("ANONYMOUS_SESSION_MINUTES", "30"))
 MAX_REQUEST_BODY = int(env("MAX_REQUEST_BODY", "32768"))
-SURVEY_COMMENT_MAX = int(env("SURVEY_COMMENT_MAX", "500"))
+SURVEY_COMMENT_MAX = int(env("SURVEY_COMMENT_MAX", "300"))
 YEDAM_STALE_DAYS = int(env("YEDAM_STALE_DAYS", "180"))
 QR_EVENT_CLOCK_SKEW_SECONDS = int(env("QR_EVENT_CLOCK_SKEW_SECONDS", "300"))
 QR_EVENT_HARD_TIMEOUT_MINUTES = int(env("QR_EVENT_HARD_TIMEOUT_MINUTES", "30"))
@@ -120,7 +123,7 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "apps.core.errors.exception_handler",
     "DEFAULT_THROTTLE_RATES": {"public": "60/min", "survey": "30/min", "edge": "120/min"},
 }
-SPECTACULAR_SETTINGS = {"TITLE": "SENTRA QR API", "VERSION": "1.0.0", "SERVE_INCLUDE_SCHEMA": False}
+SPECTACULAR_SETTINGS = {"TITLE": "SENTRA QR API", "VERSION": "1.1.0", "SERVE_INCLUDE_SCHEMA": False}
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SAMESITE = "Lax"
@@ -128,4 +131,6 @@ X_FRAME_OPTIONS = "DENY"
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "no-referrer"
 ENABLE_DEMO_UI = env_bool("ENABLE_DEMO_UI", False)
+ENABLE_DISPLAY_UI = env_bool("ENABLE_DISPLAY_UI", False)
+ENABLE_DISPLAY_SIMULATOR = env_bool("ENABLE_DISPLAY_SIMULATOR", False)
 CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}

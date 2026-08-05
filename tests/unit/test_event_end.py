@@ -61,7 +61,10 @@ def test_valid_end_and_repeated_end_are_idempotent():
     first = EventService.end(device, payload, str(event.event_id))
     second = EventService.end(device, payload, str(event.event_id))
     assert first == second
-    assert first["qr_mode"] == "GENERAL"
+    assert first["qr_mode"] == "DYNAMIC"
+    assert first["public_url"].endswith(TokenService.create(device.device_id, event.event_id)[0])
+    event.token.refresh_from_db()
+    assert event.token.status == "ACTIVE"
 
 
 def test_end_before_start_is_rejected():

@@ -1,0 +1,88 @@
+{% load static %}
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>SENTRA · Farkındalık ve Destek Ekranı</title>
+  <link rel="stylesheet" href="{% static 'display/css/sentra-display.css' %}">
+</head>
+<body
+  data-start-url="{% url 'display:simulate-start' %}"
+  data-end-url-template="/display/api/simulate/{event_id}/end"
+  data-support-url="{{ support_url }}"
+  data-simulator="{{ simulator_enabled|yesno:'true,false' }}"
+>
+  <header class="topbar">
+    <div class="brand-mark" aria-hidden="true">S</div>
+    <div>
+      <strong>SENTRA</strong>
+      <span>Yapay zekâ destekli farkındalık ve yönlendirme sistemi</span>
+    </div>
+    <div class="system-status"><i></i><span id="statusText">Sistem hazır</span></div>
+  </header>
+
+  <main class="experience" id="experience" data-state="idle">
+    <section class="panel camera-panel" aria-labelledby="cameraTitle">
+      <div class="panel-head">
+        <div><span class="eyebrow">ANLIK GÖRÜNTÜ</span><h1 id="cameraTitle">Algılama alanı</h1></div>
+        <span class="badge" id="detectionBadge">SİMÜLASYON</span>
+      </div>
+      <div class="camera-stage" id="cameraStage">
+        <video id="detectionVideo" muted loop playsinline preload="auto" poster="">
+          <source src="{{ detection_video_url }}" type="video/mp4">
+        </video>
+        <div class="camera-overlay">
+          <span class="corner corner-a"></span><span class="corner corner-b"></span>
+          <div class="detection-card" id="detectionCard">
+            <small>Olay durumu</small><strong id="detectionText">İzleniyor</strong>
+            <span>Görüntü kaydedilmez</span>
+          </div>
+        </div>
+      </div>
+      <div class="metrics" aria-label="Sistem durumu">
+        <span><i></i> Sağlayıcı: DemoVideo</span>
+        <span><i></i> Gizlilik: yerel geçici ROI</span>
+        <span><i></i> İçerik seçimi: 18–34 aday</span>
+      </div>
+    </section>
+
+    <section class="panel content-panel" aria-labelledby="contentTitle">
+      <div class="panel-head">
+        <div><span class="eyebrow">FARKINDALIK İÇERİĞİ</span><h2 id="contentTitle">{{ content.title }}</h2></div>
+        <span class="badge neutral" id="contentBadge">BEKLEMEDE</span>
+      </div>
+      <div class="content-stage" id="contentStage">
+        <div class="content-idle" id="contentIdle">
+          <div class="pulse-symbol" aria-hidden="true">✦</div>
+          <strong>Uygun içerik için hazır</strong>
+          <span>Doğrulanmış bir olay oluştuğunda içerik burada gösterilir.</span>
+        </div>
+        <video id="contentVideo" playsinline preload="auto" poster="{{ poster_url }}">
+          <source src="{{ video_url }}" type="video/mp4">
+          {% if caption_url %}<track kind="captions" src="{{ caption_url }}" srclang="tr" label="Türkçe" default>{% endif %}
+        </video>
+      </div>
+
+      <aside class="qr-strip" id="qrStrip" aria-label="Destek QR kodu">
+        <div class="qr-copy">
+          <span class="eyebrow">DESTEK VE YÖNLENDİRME</span>
+          <strong>QR ile YEDAM 115 bilgilerine ulaşın</strong>
+          <p>115, merkez bilgileri, yol tarifi ve isteğe bağlı anonim geri bildirim.</p>
+          <small>SENTRA bağımsız bir farkındalık projesidir; resmî ortaklık iddiasında bulunmaz.</small>
+        </div>
+        <img id="qrImage" src="{{ general_qr_url }}" alt="Genel SENTRA destek sayfası QR kodu">
+        <div class="qr-meta"><span id="qrMode">GENEL DESTEK</span><b id="qrTimer">Her zaman erişilebilir</b></div>
+      </aside>
+    </section>
+  </main>
+
+  <footer class="controlbar">
+    <p><strong>İnceleme prototipi.</strong> Tespit videosu model başarımı kanıtı değildir; yalnızca modüler entegrasyon olayını temsil eder.</p>
+    {% if simulator_enabled %}<button id="startExperience" type="button">Deneyimi Başlat</button>{% endif %}
+  </footer>
+
+  <canvas id="transitionCanvas" class="transition-canvas" aria-hidden="true"></canvas>
+  <script type="module" src="{% static 'display/js/core/orchestrator.js' %}"></script>
+</body>
+</html>

@@ -54,9 +54,9 @@ class InteractionView(APIView):
             if token_value
             else None
         )
-        QrInteraction.objects.create(
+        _, created = QrInteraction.objects.get_or_create(
             token=token,
             anonymous_session_id=sid,
             interaction_type=s.validated_data["interaction_type"],
         )
-        return Response({"status": "recorded"}, status=201)
+        return Response({"status": "recorded"}, status=201 if created else 200)
